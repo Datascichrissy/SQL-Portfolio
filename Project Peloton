@@ -1,0 +1,89 @@
+--Created workout table to store my peloton workout data
+Create TABLE IF NOT EXISTS  Workout
+(
+workout_id SERIAL PRIMARY Key,
+Workout_Timestamp TIMESTAMPTZ, 
+Workout_Date Date,
+Workout_Day Varchar(200),
+Workout_Time Time,
+Live_OnDemand Varchar,
+Instructor_Name Varchar(700) Not Null,
+Co_Instructor Varchar(700),
+Length integer,
+Fitness_Discipline Varchar(700),
+Type Varchar(700), 
+Total_Output Integer,
+Avg_Watts Integer,
+Avg_Resistance decimal(5,2),
+Avg_Cadence Integer,
+Avg_Speed Decimal (5,2),
+Distance Decimal(5,2),
+Calories_Burned Integer,
+Avg_Heartrate Decimal (5,2),
+Avg_Incline Decimal(5,2),
+Avg_Pace Time);
+
+--updated the avg_pace field data type from Time to Interval to accommodate the data from my export. 
+ALTER TABLE workout
+ALTER COLUMN Avg_Pace SET DATA TYPE INTERVAL
+
+--used the copy function to upload my CSV file from my desktop to Postgresql
+COPY "workout" (Workout_ID,Workout_Timestamp,Workout_Date,Workout_Day,Workout_Time,Live_OnDemand,Instructor_Name,Co_Instructor,Length,Fitness_Discipline,Type,Total_Output,Avg_Watts,Avg_Resistance,Avg_Cadence,Avg_Speed,Distance,Calories_Burned,Avg_Heartrate,Avg_Incline,Avg_Pace)FROM '/Applications/PostgreSQL 15/Documentation/CStevens Peloton Data - Cleaned-2.csv' WITH CSV HEADER;
+
+--validated all the rows from the csv export were loaded into Postgresql
+SELECT * FROM workout
+
+--Check the instructor_name table to confirm validate that there were not duplicate instructors or any two for one instructors listed. 
+SELECT  DISTINCT(instructor_name)
+FROM workout
+Order by instructor_name
+
+--Upon review the above query I missed two cells where I do not clean up the two-for-one data. I ran this query to pull up those two items
+SELECT workout_id, instructor_name, co_instructor
+FROM workout
+WHERE instructor_name IN ('Camila & Cody','Cliff & Hannah')
+
+--data correction for workout id 1522
+UPDATE Workout 
+SET Instructor_name = 'Cliff Dwenger',
+Co_Instructor ='Hannah Frankson'
+WHERE workout_id =1522
+
+--data correction for id 2778
+UPDATE Workout 
+SET Instructor_name = 'Cody Rigsby',
+Co_Instructor ='Camila Ramon'
+WHERE workout_id =2778
+
+--Validating the co_instructor column for data cleaniness
+SELECT  DISTINCT(co_instructor)
+FROM workout
+Order by co_instructor
+
+--This query will confirm the total amount of workouts by moduality
+SELECT fitness_discipline, Count(fitness_discipline) as total from workout
+Group by fitness_discipline
+Order by total desc
+
+--This query will confirm the total amount of workouts by year
+SELECT EXTRACT('Year' FROM Workout_Date) as Year, fitness_discipline, Count(fitness_discipline) as total from workout
+Group by Year,fitness_discipline
+Order by year desc
+
+--This query will figure out the day of the week I prefered working out for each year
+SELECT EXTRACT('YEAR'FROM Workout_date) as year, workout_day, count(workout_day)
+FROM workout
+Group by year, workout_day
+Order by year desc
+
+--Figure out my workout pattern over the months for the past three years to see if there is an increase or decrease in working out between the months
+SELECT EXTRACT('YEAR'FROM Workout_date) as year, EXTRACT('MONTH'FROM Workout_date) as month, count(*)
+FROM workout
+Group by year, month
+Order by year, month desc
+
+--To figure out if I was more likely to take a particular workout in one month vs another. 
+SELECT EXTRACT('YEAR'FROM Workout_date) as year, EXTRACT('MONTH'FROM Workout_date) as month, fitness_discipline,count(*)
+FROM workout
+Group by year, month, fitness_discipline
+Order by year, month desc
