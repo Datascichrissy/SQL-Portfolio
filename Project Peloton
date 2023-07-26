@@ -87,3 +87,8 @@ SELECT EXTRACT('YEAR'FROM Workout_date) as year, EXTRACT('MONTH'FROM Workout_dat
 FROM workout
 Group by year, month, fitness_discipline
 Order by year, month desc
+
+--This query will specify which instructor I have taken the most classes with
+SELECT instructor_name, count(instructor_name) as num_classes from workout
+group by instructor_name
+order by num_classes desc
